@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiveCode Export</title>
+    
+    <!-- ============================================ -->
+    <!-- CSS CODE (from the CSS editor)               -->
+    <!-- ============================================ -->
+    <style>
+
+    </style>
+    <!-- ============================================ -->
+    
+</head>
+<body>
+    <!-- ============================================ -->
+    <!-- HTML CODE (from the HTML editor)             -->
+    <!-- ============================================ -->
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=no">
+    <title>ট্যাকটিক্যাল স্কোয়াড ওয়াকি-টকি (Tactical Squad Radio)</title>
+    <!-- গ্লোবাল P2P অডিও ট্রান্সমিশনের জন্য PeerJS -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #1b2420, #0a0e0c);
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #d1ded6;
+            padding: 15px;
+        }
+
+        .walkie-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 370px;
+        }
+
+        /* উপরের অ্যান্টেনা ও রোটারি নব */
+        .top-fixtures {
+            width: 270px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 20px;
+            z-index: 1;
+        }
+
+        .antenna {
+            width: 20px;
+            height: 100px;
+            background: linear-gradient(90deg, #111, #444, #111);
+            border-radius: 6px 6px 0 0;
+            border: 2px solid #080a09;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.7);
+        }
+
+        .rotary-knob-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .knob-label {
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #798c80;
+            margin-bottom: 2px;
+        }
+
+        .rotary-knob {
+            width: 48px;
+            height: 30px;
+            background: repeating-linear-gradient(90deg, #151a17, #151a17 4px, #333d37 5px, #333d37 7px);
+            border-radius: 6px 6px 0 0;
+            border: 2px solid #0d1210;
+            border-bottom: none;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.15);
+        }
+
+        /* প্রধান ট্যাকটিক্যাল বডি */
+        .radio-body {
+            position: relative;
+            width: 100%;
+            background: linear-gradient(145deg, #2b3831, #17211c);
+            border-radius: 30px 30px 42px 42px;
+            padding: 22px 18px;
+            border: 4px solid #101714;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.85), inset 0 2px 5px rgba(255,255,255,0.15);
+        }
+
+        /* সাইড ট্যাকটিক্যাল গ্রিপ */
+        .radio-body::before, .radio-body::after {
+            content: '';
+            position: absolute;
+            top: 75px;
+            width: 10px;
+            height: 250px;
+            background: repeating-linear-gradient(180deg, #0e1411, #0e1411 9px, #2a3730 10px, #2a3730 18px);
+            border-radius: 4px;
+        }
+        .radio-body::before { left: -8px; }
+        .radio-body::after { right: -8px; }
+
+        /* স্ট্যাটাস LED */
+        .led-indicator {
+            position: absolute;
+            top: 26px;
+            right: 26px;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: #2a332d;
+            border: 2px solid #0e1411;
+            transition: all 0.2s ease;
+        }
+        .led-indicator.tx { background: #ff2200; box-shadow: 0 0 12px #ff2200; }
+        .led-indicator.rx { background: #00ff44; box-shadow: 0 0 12px #00ff44; }
+
+        /* সামরিক এলসিডি স্ক্রিন */
+        .lcd-screen {
+            background: #758c5a;
+            border: 4px solid #101613;
+            border-radius: 12px;
+            padding: 10px 12px;
+            color: #1a2911;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 900;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+            margin-bottom: 14px;
+            transition: background 0.2s ease;
+        }
+
+        .lcd-screen.transmitting {
+            background: #bd3b33;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(189, 59, 51, 0.6), inset 0 0 10px rgba(0,0,0,0.6);
+        }
+
+        .lcd-screen.receiving {
+            background: #2ea65f;
+            color: #0d381e;
+            box-shadow: 0 0 20px rgba(46, 166, 95, 0.6);
+        }
+
+        .lcd-top-bar {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            letter-spacing: 1px;
+            border-bottom: 1px solid currentColor;
+            padding-bottom: 3px;
+            margin-bottom: 6px;
+        }
+
+        .lcd-channel {
+            font-size: 26px;
+            text-align: center;
+            line-height: 1.1;
+            letter-spacing: 2px;
+        }
+
+        .lcd-sub {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .lcd-status-text {
+            font-size: 11px;
+            text-align: center;
+            margin-top: 6px;
+            letter-spacing: 2px;
+        }
+
+        /* কার্যকর ভলিউম স্লাইডার কনসোল */
+        .volume-console {
+            background: #121815;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 2px solid #0a0f0d;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .vol-label {
+            font-size: 10px;
+            font-weight: 800;
+            color: #7d9687;
+            letter-spacing: 1px;
+        }
+
+        .vol-slider {
+            flex-grow: 1;
+            accent-color: #ff5722;
+            cursor: pointer;
+            height: 5px;
+        }
+
+        .vol-val {
+            font-size: 11px;
+            font-family: monospace;
+            font-weight: bold;
+            color: #ff9800;
+            width: 32px;
+            text-align: right;
+        }
+
+        /* স্পিকার গ্রিল */
+        .speaker-grille {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            padding: 14px 18px;
+            background: #111714;
+            border-radius: 14px;
+            margin-bottom: 14px;
+            border: 2px solid #0a0d0c;
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.7);
+        }
+
+        .speaker-hole {
+            width: 8px;
+            height: 8px;
+            background: #000;
+            border-radius: 50%;
+            margin: auto;
+            box-shadow: inset 0 1px 2px rgba(255,255,255,0.1);
+        }
+
+        /* গ্রুপ চ্যানেল বক্স */
+        .channel-control-box {
+            background: #131a16;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 14px;
+            border: 2px solid #0d1210;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        input {
+            flex-grow: 1;
+            padding: 9px;
+            border-radius: 6px;
+            border: 1px solid #2a3830;
+            background: #202b25;
+            color: #00ff66;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+            outline: none;
+        }
+
+        .btn-join {
+            background: #2e7d32;
+            color: #fff;
+            border: none;
+            padding: 0 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #1b4d1f;
+        }
+        .btn-join:active { transform: translateY(2px); box-shadow: none; }
+
+        /* ট্যাকটিক্যাল ফাংশন বাটন */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .btn-tac {
+            background: linear-gradient(180deg, #37463e, #232d28);
+            border: 2px solid #111714;
+            color: #c9d8cf;
+            padding: 9px 5px;
+            font-weight: 800;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px #0b0f0d;
+            font-size: 11px;
+            text-align: center;
+        }
+        .btn-tac:active {
+            box-shadow: 0 1px #0b0f0d;
+            transform: translateY(3px);
+        }
+
+        /* PTT বাটন */
+        .ptt-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .ptt-button {
+            width: 100%;
+            height: 72px;
+            background: linear-gradient(180deg, #ff5722, #c43204);
+            border: 3px solid #731c00;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #541500, 0 8px 12px rgba(0,0,0,0.5);
+            outline: none;
+            transition: all 0.08s ease;
+        }
+
+        .ptt-button:disabled {
+            background: #47524c;
+            border-color: #272e2a;
+            box-shadow: 0 4px 0 #1b211e;
+            color: #7c8a82;
+            cursor: not-allowed;
+        }
+
+        .ptt-button:active:not(:disabled), .ptt-button.active {
+            box-shadow: 0 1px 0 #541500, 0 3px 5px rgba(0,0,0,0.5);
+            transform: translateY(5px);
+            background: linear-gradient(180deg, #e64a19, #9e2700);
+        }
+
+        .ptt-hint {
+            font-size: 10px;
+            color: #798c80;
+            margin-top: 7px;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="walkie-wrapper">
+        <!-- উপরের অ্যান্টেনা ও রোটারি ভলিউম নব -->
+        <div class="top-fixtures">
+            <div class="antenna"></div>
+            <div class="rotary-knob-container">
+                <span class="knob-label">VOL / PWR</span>
+                <div class="rotary-knob" title="Master Volume Dial"></div>
+            </div>
+        </div>
+
+        <!-- প্রধান বডি -->
+        <div class="radio-body">
+            <div class="led-indicator" id="statusLed"></div>
+
+            <!-- এলসিডি স্ক্রিন -->
+            <div class="lcd-screen" id="lcdScreen">
+                <div class="lcd-top-bar">
+                    <span id="powerLevel">UHF/FM</span>
+                    <span id="memberCount">SQUAD: 0</span>
+                    <span id="signalBar">📶 ■■■■</span>
+                </div>
+                <div class="lcd-channel" id="channelText">OFFLINE</div>
+                <div class="lcd-sub">
+                    <span id="freqText">---.--- MHz</span>
+                    <span id="rogerStatus">BEEP: ON</span>
+                </div>
+                <div class="lcd-status-text" id="statusText">চ্যানেল দিন ও যুক্ত হন</div>
+            </div>
+
+            <!-- কার্যকর ভলিউম কন্ট্রোল স্লাইডার -->
+            <div class="volume-console">
+                <span class="vol-label">🔊 VOL:</span>
+                <input type="range" class="vol-slider" id="volSlider" min="0" max="100" value="85">
+                <span class="vol-val" id="volVal">85%</span>
+            </div>
+
+            <!-- স্পিকার গ্রিল -->
+            <div class="speaker-grille">
+                <div class="speaker-hole"></div><div class="speaker-hole"></div><div class="speaker-hole"></div><div class="speaker-hole"></div><div class="speaker-hole"></div>
+                <div class="speaker-hole"></div><div class="speaker-hole"></div><div class="speaker-hole"></div><div class="speaker-hole"></div><div class="speaker-hole"></div>
+                <div class="speaker-hole"></div><div class="speaker-hole"></div><div class="speaker-hole"></div><div class="speaker-hole"></div><div class="speaker-hole"></div>
+            </div>
+
+            <!-- গ্রুপ চ্যানেল জয়েনিং ইনপুট -->
+            <div class="channel-control-box" id="channelBox">
+                <div class="input-group">
+                    <input type="text" id="channelInput" placeholder="চ্যানেল নাম (যেমন: SQUAD1)" maxlength="12">
+                    <button class="btn-join" id="joinBtn" onclick="joinSquadChannel()">JOIN</button>
+                </div>
+            </div>
+
+            <!-- ফাংশন বাটন সমূহ -->
+            <div class="controls-grid">
+                <button class="btn-tac" id="btnRoger" onclick="toggleRogerBeep()">ROGER BEEP</button>
+                <button class="btn-tac" id="btnAlert" onclick="sendAlertTone()">🚨 ALERT TONE</button>
+            </div>
+
+            <!-- PTT বাটন -->
+            <div class="ptt-container">
+                <button class="ptt-button" id="pttBtn" disabled>PUSH TO TALK</button>
+                <div class="ptt-hint" id="hintText">চ্যানেলে জয়েন করে বোতাম চেপে কথা বলুন</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- মাল্টিপল অডিও স্ট্রিম প্লেয়ার কন্টেইনার -->
+    <div id="audioContainer" style="display:none;"></div>
+
+    <script>
+        let peer = null;
+        let localStream = null;
+        let activeCalls = {};
+        let activeDataConns = {};
+        let knownPeers = new Set();
+        let myChannel = "";
+        let rogerBeepEnabled = true;
+        let masterVolume = 0.85;
+
+        // অডিও কনটেক্সট
+        let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        const lcdScreen = document.getElementById('lcdScreen');
+        const channelText = document.getElementById('channelText');
+        const freqText = document.getElementById('freqText');
+        const statusText = document.getElementById('statusText');
+        const statusLed = document.getElementById('statusLed');
+        const pttBtn = document.getElementById('pttBtn');
+        const memberCount = document.getElementById('memberCount');
+        const volSlider = document.getElementById('volSlider');
+        const volVal = document.getElementById('volVal');
+        const hintText = document.getElementById('hintText');
+        const btnRoger = document.getElementById('btnRoger');
+
+        // ভলিউম স্লাইডার ইভেন্ট
+        volSlider.addEventListener('input', (e) => {
+            masterVolume = e.target.value / 100;
+            volVal.textContent = e.target.value + '%';
+            
+            // যুক্ত থাকা সব প্লেয়ারের ভলিউম আপডেট
+            document.querySelectorAll('#audioContainer audio').forEach(audio => {
+                audio.volume = masterVolume;
+            });
+        });
+
+        function initAudio() {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // স্কোয়েল্চ স্ট্যাটিক নয়েজ (Static Squelch Noise)
+        function playStaticNoise(duration = 140) {
+            initAudio();
+            const bufferSize = audioCtx.sampleRate * (duration / 1000);
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = "bandpass";
+            filter.frequency.value = 1400;
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.12 * masterVolume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (duration / 1000));
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            noise.start();
+        }
+
+        // দুই-টোন রজার বিপ (Roger Beep)
+        function playRogerBeep() {
+            if (!rogerBeepEnabled) return;
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(1680, audioCtx.currentTime + 0.08);
+
+            gain.gain.setValueAtTime(0.18 * masterVolume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.22);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.22);
+        }
+
+        // সতর্কবার্তা টোন (Alert Tone)
+        function playAlertSound() {
+            initAudio();
+            let count = 0;
+            const timer = setInterval(() => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.value = count % 2 === 0 ? 950 : 1350;
+                gain.gain.setValueAtTime(0.15 * masterVolume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.08);
+                count++;
+                if (count > 6) clearInterval(timer);
+            }, 80);
+        }
+
+        // চ্যানেলে যুক্ত হওয়া
+        async function joinSquadChannel() {
+            const raw = document.getElementById('channelInput').value.trim().toUpperCase();
+            if (!raw) return alert("অনুগ্রহ করে একটি চ্যানেলের নাম লিখুন!");
+
+            myChannel = raw.replace(/[^A-Z0-9]/g, '');
+            document.getElementById('joinBtn').disabled = true;
+            document.getElementById('channelInput').disabled = true;
+            statusText.textContent = "কানেক্টিং...";
+
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { echoCancellation: true, noiseSuppression: true } 
+                });
+                localStream.getAudioTracks()[0].enabled = false; // শুরুতে মিউট
+            } catch (err) {
+                alert("মাইক্রোফোনের অনুমতি দেওয়া হয়নি!");
+                document.getElementById('joinBtn').disabled = false;
+                document.getElementById('channelInput').disabled = false;
+                return;
+            }
+
+            // এই চ্যানেলের সাথে মেম্বার আইডি তৈরি
+            const myPeerId = "wt_" + myChannel + "_" + Math.floor(1000 + Math.random() * 9000);
+            peer = new Peer(myPeerId);
+
+            peer.on('open', (id) => {
+                channelText.textContent = "CH-" + myChannel;
+                freqText.textContent = "446." + Math.floor(100 + Math.random() * 800) + " MHz";
+                statusText.textContent = "STANDBY (অনলাইন)";
+                pttBtn.removeAttribute('disabled');
+                hintText.textContent = "PTT বোতাম বা Spacebar চেপে কথা বলুন";
+                document.getElementById('channelBox').style.display = 'none';
+                
+                playStaticNoise(150);
+                setTimeout(playRogerBeep, 160);
+
+                // নেটওয়ার্কে অন্যান্য মেম্বারদের সাথে সংযোগ
+                startMeshNetwork();
+            });
+
+            // অন্য মেম্বারের কল রিসিভ করা
+            peer.on('call', (call) => {
+                call.answer(localStream);
+                setupIncomingAudio(call);
+            });
+
+            // সিগন্যালিং ডেটা কানেকশন গ্রহণ
+            peer.on('connection', (conn) => {
+                setupDataConnection(conn);
+            });
+        }
+
+        function setupIncomingAudio(call) {
+            activeCalls[call.peer] = call;
+            updateSquadCount();
+
+            call.on('stream', (stream) => {
+                let audio = document.getElementById('audio_' + call.peer);
+                if (!audio) {
+                    audio = document.createElement('audio');
+                    audio.id = 'audio_' + call.peer;
+                    audio.autoplay = true;
+                    document.getElementById('audioContainer').appendChild(audio);
+                }
+                audio.volume = masterVolume;
+                audio.srcObject = stream;
+            });
+
+            call.on('close', () => {
+                const el = document.getElementById('audio_' + call.peer);
+                if (el) el.remove();
+                delete activeCalls[call.peer];
+                updateSquadCount();
+            });
+        }
+
+        function setupDataConnection(conn) {
+            activeDataConns[conn.peer] = conn;
+            conn.on('data', (data) => {
+                if (data.type === 'PEER_DISCOVERY') {
+                    data.peers.forEach(peerId => {
+                        if (peerId !== peer.id && !activeCalls[peerId]) {
+                            connectToTeamMember(peerId);
+                        }
+                    });
+                } else if (data.type === 'TX_STATE') {
+                    handleRemoteTxState(data.isTalking);
+                } else if (data.type === 'ALERT_SIGNAL') {
+                    playAlertSound();
+                }
+            });
+
+            conn.on('open', () => {
+                knownPeers.add(conn.peer);
+                conn.send({
+                    type: 'PEER_DISCOVERY',
+                    peers: Array.from(knownPeers)
+                });
+                updateSquadCount();
+            });
+
+            conn.on('close', () => {
+                delete activeDataConns[conn.peer];
+                knownPeers.delete(conn.peer);
+                updateSquadCount();
+            });
+        }
+
+        function connectToTeamMember(targetPeerId) {
+            if (targetPeerId === peer.id || activeCalls[targetPeerId]) return;
+
+            const conn = peer.connect(targetPeerId);
+            setupDataConnection(conn);
+
+            const call = peer.call(targetPeerId, localStream);
+            setupIncomingAudio(call);
+        }
+
+        function startMeshNetwork() {
+            knownPeers.add(peer.id);
+            // প্রতি ৩ সেকেন্ডে স্কোয়াড মেম্বারদের মাঝে পিং পাঠানো
+            setInterval(() => {
+                Object.values(activeDataConns).forEach(conn => {
+                    if (conn.open) {
+                        conn.send({
+                            type: 'PEER_DISCOVERY',
+                            peers: Array.from(knownPeers)
+                        });
+                    }
+                });
+            }, 3000);
+        }
+
+        function updateSquadCount() {
+            const count = Object.keys(activeCalls).length + 1;
+            memberCount.textContent = "SQUAD: " + count;
+        }
+
+        // অন্য কেউ কথা বললে UI পরিবর্তন
+        function handleRemoteTxState(isTalking) {
+            if (isTalking) {
+                lcdScreen.className = 'lcd-screen receiving';
+                statusLed.className = 'led-indicator rx';
+                statusText.textContent = "RX RECEIVING...";
+                playStaticNoise(90);
+            } else {
+                lcdScreen.className = 'lcd-screen';
+                statusLed.className = 'led-indicator';
+                statusText.textContent = "STANDBY (অনলাইন)";
+                playStaticNoise(100);
+                setTimeout(playRogerBeep, 110);
+            }
+        }
+
+        // PTT চেপে কথা বলা
+        function startTransmission() {
+            if (!localStream || pttBtn.disabled) return;
+            initAudio();
+
+            localStream.getAudioTracks()[0].enabled = true; // মাইক আনমিউট
+            pttBtn.classList.add('active');
+            lcdScreen.className = 'lcd-screen transmitting';
+            statusLed.className = 'led-indicator tx';
+            statusText.textContent = "TX TRANSMITTING...";
+            playStaticNoise(80);
+
+            // স্কোয়াডের সবাইকে সংকেত পাঠানো
+            broadcastData({ type: 'TX_STATE', isTalking: true });
+        }
+
+        // PTT ছেড়ে দেওয়া
+        function stopTransmission() {
+            if (!localStream || pttBtn.disabled) return;
+
+            localStream.getAudioTracks()[0].enabled = false; // মাইক মিউট
+            pttBtn.classList.remove('active');
+            lcdScreen.className = 'lcd-screen';
+            statusLed.className = 'led-indicator';
+            statusText.textContent = "STANDBY (অনলাইন)";
+
+            playStaticNoise(120);
+            setTimeout(playRogerBeep, 130);
+
+            broadcastData({ type: 'TX_STATE', isTalking: false });
+        }
+
+        function broadcastData(data) {
+            Object.values(activeDataConns).forEach(conn => {
+                if (conn.open) conn.send(data);
+            });
+        }
+
+        // অ্যালার্ম টোন পাঠানো
+        function sendAlertTone() {
+            if (!peer) return;
+            playAlertSound();
+            broadcastData({ type: 'ALERT_SIGNAL' });
+        }
+
+        // রজার বিপ চালু/বন্ধ
+        function toggleRogerBeep() {
+            rogerBeepEnabled = !rogerBeepEnabled;
+            document.getElementById('rogerStatus').textContent = `BEEP: ${rogerBeepEnabled ? 'ON' : 'OFF'}`;
+            playStaticNoise(70);
+        }
+
+        // PTT মাউস ও টাচ ইভেন্ট
+        pttBtn.addEventListener('mousedown', startTransmission);
+        window.addEventListener('mouseup', stopTransmission);
+
+        pttBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startTransmission();
+        });
+        window.addEventListener('touchend', stopTransmission);
+
+        // কীবোর্ড শর্টকাট (Spacebar)
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !e.repeat && e.target.tagName !== 'INPUT') {
+                e.preventDefault();
+                startTransmission();
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
+                e.preventDefault();
+                stopTransmission();
+            }
+        });
+    </script>
+</body>
+</html>
+
+    <!-- ============================================ -->
+    
+    <!-- ============================================ -->
+    <!-- JAVASCRIPT CODE (from the JS editor)         -->
+    <!-- ============================================ -->
+    <script>
+
+    </script>
+    <!-- ============================================ -->
+    
+</body>
+</html>
